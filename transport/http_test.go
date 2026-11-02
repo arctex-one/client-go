@@ -90,3 +90,22 @@ func TestResponseErrorPreservesCodeWithoutRenderingEvidence(t *testing.T) {
 		t.Fatal("error renders private evidence")
 	}
 }
+
+type trackedTransport struct{ closed bool }
+
+func (t *trackedTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, context.Canceled
+}
+func (t *trackedTransport) CloseIdleConnections() { t.closed = true }
+
+func TestCloseReleasesSuppliedIdleConnections(t *testing.T) {
+	pool := &trackedTransport{}
+	c, err := New("https://example.com", http.Client{Transport: pool})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.CloseIdleConnections()
+	if !pool.closed {
+		t.Fatal("shutdown did not release the supplied transport")
+	}
+}

@@ -12,7 +12,7 @@ Use a secret-provider lookup on each operation. Applications decide how to authe
 
 `transport.New(origin, httpClient)` validates an origin with no user information, path prefix, query or fragment. `Call(ctx, bearer, method, path, key, rawBody)` accepts only GET and POST `/v1/` operations. It preserves raw body/response bytes and rejects a POST without an idempotency key. It returns successful bytes without validating their business meaning; validate JSON and resource scope before storing or acting on them. Do not use arbitrary customer-supplied origins, paths or credentials.
 
-Redirects are refused for both raw and typed calls. TLS trust, proxies and connection behavior belong to the supplied HTTP transport. Use an approved HTTPS origin in production. HTTP support exists for development. The library copies the HTTP client, not its underlying transport; callers must keep shared transport settings stable. A default 30-second timeout bounds otherwise unbounded clients. Context cancellation propagates through wrapped errors.
+Redirects are refused for both raw and typed calls. TLS trust, proxies and connection behavior belong to the supplied HTTP transport. Use an approved HTTPS origin in production. HTTP support exists for development. The library copies the HTTP client, not its underlying transport; callers must keep shared transport settings stable. A default 30-second timeout bounds otherwise unbounded clients. Context cancellation propagates through wrapped errors. Raw clients expose `CloseIdleConnections` for gateway shutdown; it releases idle connections without interrupting active calls.
 
 ## Durable submissions and uncertain outcomes
 

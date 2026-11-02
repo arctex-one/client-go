@@ -47,6 +47,10 @@ func New(origin string, client http.Client) (*Client, error) {
 
 func (c *Client) Origin() string { return c.origin }
 
+// CloseIdleConnections releases idle connections owned by the supplied HTTP
+// transport. It does not interrupt in-flight calls or prevent later calls.
+func (c *Client) CloseIdleConnections() { c.http.CloseIdleConnections() }
+
 // ResponseError retains bounded private evidence. Error never renders the body
 // or credential. Truncated evidence must not be treated as a complete receipt.
 type ResponseError struct {

@@ -3,7 +3,7 @@
 A shared Go client for [Arctex One](https://github.com/arctex-one) digital asset processing. Sendico and MCRM use this module; application-specific gateways retain customer authorization, durable evidence, pricing and ledger posting.
 
 ```sh
-go get github.com/arctex-one/client-go@v0.1.0
+go get github.com/arctex-one/client-go@v0.1.1
 ```
 
 Requires Go 1.27.1 or later. The module uses only the Go standard library.
