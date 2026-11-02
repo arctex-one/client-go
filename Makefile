@@ -1,7 +1,7 @@
 .PHONY: generate build test check
 
 generate:
-	go run ./tools/generate ./contract/openapi.json ./generated
+	go run ./tools/generate ./schema.lock.json ./generated
 
 build: generate
 	go build ./...
@@ -13,5 +13,5 @@ check: generate
 	go test -race ./...
 	go vet ./...
 	@output=$$(mktemp -d); trap 'rm -rf "$$output"' EXIT; \
-		go run ./tools/generate ./contract/openapi.json "$$output"; \
+		go run ./tools/generate ./schema.lock.json "$$output"; \
 		cmp generated/api.gen.go "$$output/api.gen.go"

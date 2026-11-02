@@ -10,12 +10,12 @@ make build
 
 Requires Go 1.27.1 or later. The module uses only the Go standard library.
 
-**Generated Go code is never tracked.** `make build`, `make test` and `make check` regenerate `generated/api.gen.go` from `contract/openapi.json` on every invocation. CI starts from a clean checkout and enforces this rule. Bare `go build` does not run generators; use the build target.
+**Neither generated Go code nor schema snapshots are tracked.** `make build`, `make test` and `make check` regenerate `generated/api.gen.go` from the externally published schema pinned by `schema.lock.json` on every invocation. CI starts from a clean checkout and enforces this rule. Bare `go build` does not run generators; use the build target.
 
-For a consuming gateway, require `github.com/arctex-one/client-go v0.2.0` and replace it with an ignored generated build directory. Before **every** build/test/lint invocation, run:
+For a consuming gateway, require `github.com/arctex-one/client-go v0.3.0` and replace it with an ignored generated build directory. Before **every** build/test/lint invocation, run:
 
 ```sh
-go run github.com/arctex-one/client-go/tools/prepare@v0.2.0 .generated/arctex-client-go
+go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 .generated/arctex-client-go
 ```
 
 For a root Go module, add `replace github.com/arctex-one/client-go => ./.generated/arctex-client-go`; nested modules use the corresponding relative path. The preparation command loads the pinned public source through Go module verification, copies it into the owned build directory and regenerates the wire API before publishing that directory. It never changes the Go module cache. Source is unified and versioned publicly; generated output stays local and ignored. Wire this command into the application build entry points rather than relying on manual setup.
@@ -26,11 +26,11 @@ This first release binds the **draft public API contract 0.5.0**, served under `
 
 | Package | Purpose |
 | --- | --- |
-| `generated` | Typed HTTP operations and wire models, generated from the bundled OpenAPI contract |
+| `generated` | Typed HTTP operations and wire models, generated from the external published OpenAPI contract |
 | `publicapi` (module root) | Exact-body callback authentication and committed financial-effect interpretation guards |
 | `transport` | Shared HTTP boundary for consumers that retain exact raw request/response evidence |
 
-The [OpenAPI contract](contract/openapi.json) describes request fields, states, errors, ownership and pagination. [Integration guidance](docs/integration.md) covers durable submissions, callbacks, recovery and financial boundaries. [Provenance](PROVENANCE.md) records the extraction source.
+The [published OpenAPI contract](https://docs.arctex.one/openapi.json) describes request fields, states, errors, ownership and pagination. [Integration guidance](docs/integration.md) covers durable submissions, callbacks, recovery and financial boundaries. [Provenance](PROVENANCE.md) records the extraction source.
 
 ## Read an account
 
@@ -117,4 +117,4 @@ make build check
 test -z "$(git ls-files generated)"
 ```
 
-Generation is deterministic and requires no external generator. The output is ignored and recreated for every supported build. Update `contract/openapi.json` only from a reviewed producer contract revision; regenerate and run the consumer contract tests together. CI verifies regeneration, race tests and vet on GitHub-hosted runners for this public repository. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Generation is deterministic and requires no external generator. The output is ignored and recreated for every supported build. Update `schema.lock.json` only to a reviewed published schema revision; regenerate and run the consumer contract tests together. CI verifies regeneration, race tests and vet on GitHub-hosted runners for this public repository. See [CONTRIBUTING.md](CONTRIBUTING.md).

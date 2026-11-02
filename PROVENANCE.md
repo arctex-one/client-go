@@ -12,7 +12,7 @@ manifest SHA-256 was
 All export file checksums and tracked source hashes were verified, and generated
 source/export were independently reproduced before extraction.
 
-The OpenAPI bytes and wire-model generator semantics are preserved. The public
+The published schema has the same request/response component and operation semantics as the reviewed preview (documentation is sanitized for public hosting). The schema is fetched externally and verified by SHA-256/version on every generation; its snapshot is not stored here. Wire-model generator semantics are preserved. The public
 module path changes to `github.com/arctex-one/client-go`. Generic HTTP transport
 was extracted from Sendico's `api/gateway/arctex/adapter/http.go` at Sendico main
 `3ca3cad21d7677d659da99de225dbe18e1dd5e78`, combined with the reviewed preview's

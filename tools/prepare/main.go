@@ -93,7 +93,7 @@ func prepare(destination string) error {
 	if err != nil {
 		return err
 	}
-	command := exec.Command("go", "run", "./tools/generate", "./contract/openapi.json", "./generated")
+	command := exec.Command("go", "run", "./tools/generate", "./schema.lock.json", "./generated")
 	command.Dir = stage
 	command.Env = append(os.Environ(), "GOWORK=off")
 	command.Stdout, command.Stderr = os.Stdout, os.Stderr

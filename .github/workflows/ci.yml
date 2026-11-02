@@ -15,5 +15,5 @@ jobs:
           go-version-file: go.mod
           cache: false
       - run: make build check
-      - name: Generated code stays out of Git
-        run: test -z "$(git ls-files generated)"
+      - name: Generated code and schema snapshots stay out of Git
+        run: test -z "$(git ls-files generated contract)"

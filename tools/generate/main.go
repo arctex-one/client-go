@@ -77,9 +77,9 @@ func keys[T any](m map[string]T) []string {
 }
 func main() {
 	if len(os.Args) != 3 {
-		panic("usage: generate_public_api spec.json output-directory")
+		panic("usage: generate_public_api schema.lock.json output-directory")
 	}
-	raw, err := os.ReadFile(os.Args[1])
+	raw, err := loadSchema(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,6 @@ func main() {
 	}
 	var b strings.Builder
 	b.WriteString("// Code generated from the maintained OpenAPI contract; DO NOT EDIT.\npackage generated\nimport(\"context\";\"encoding/json\";\"net/http\";\"net/url\";\"strings\";\"github.com/arctex-one/client-go/transport\")\n")
-	fmt.Fprintf(&b, "const Contract = %q\n", raw)
 	for _, n := range keys(spec.Components.Schemas) {
 		s := spec.Components.Schemas[n]
 		if len(s.Properties) == 0 {

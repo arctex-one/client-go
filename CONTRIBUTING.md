@@ -11,6 +11,6 @@ financial commitment. Keep credential values and real customer data out of
 fixtures, documentation, logs and issues.
 
 Run `make build check`; inspect the full diff. Never commit generated Go files.
-Every build must regenerate from the tracked contract and generator. API/error/transport
+Every build must regenerate from the pinned external schema and tracked generator. API/error/transport
 changes require behavior tests and a migration note. Update provenance when the
 producer contract changes. Version SDK releases separately from contract versions.
