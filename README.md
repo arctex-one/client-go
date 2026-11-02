@@ -1,6 +1,21 @@
-# Arctex One Go client
+# Arctex.One Go client
 
-A shared Go client for [Arctex One](https://github.com/arctex-one) digital asset processing. Sendico and MCRM use this module; application-specific gateways retain customer authorization, durable evidence, pricing and ledger posting.
+The shared Go client for Arctex.One processing: accounts, receiving addresses, quotations, transfers and committed financial effects over the public HTTP API. Sendico and MCRM integration gateways use this module while retaining their customer authorization, durable recovery and accounting rules.
+
+**Module:** `github.com/arctex-one/client-go` · **Client release:** `v0.3.0` · **API:** `/v1`, draft contract `0.5.0` · **Go:** `1.27.1+`
+
+## Start here
+
+| Task | Documentation |
+| --- | --- |
+| Add the client to an application and automate generation | [Getting started](docs/getting-started.md) |
+| Find a method, request type or error | [API reference](docs/api.md) |
+| Read accounts, create an address, quote, submit, recover and receive callbacks | [Usage examples](docs/examples.md) |
+| Design durable submissions, attribution, callbacks and financial recovery | [Integration guide](docs/integration.md) |
+| Resolve build, schema, credential or recovery failures | [Troubleshooting](docs/troubleshooting.md) |
+| Change the client or its schema pin | [Contributing](CONTRIBUTING.md) · [Provenance](PROVENANCE.md) |
+
+## Build the client
 
 ```sh
 git clone https://github.com/arctex-one/client-go.git
@@ -8,113 +23,24 @@ cd client-go
 make build
 ```
 
-Requires Go 1.27.1 or later. The module uses only the Go standard library.
+`make build`, `make test` and `make check` regenerate wire code before compilation. The generator fetches the [published OpenAPI schema](https://docs.arctex.one/openapi.json), then verifies the version and SHA-256 recorded in [schema.lock.json](schema.lock.json). Generated Go and schema snapshots are not tracked in the current source tree. The library uses only the Go standard library.
 
-**Neither generated Go code nor schema snapshots are tracked.** `make build`, `make test` and `make check` regenerate `generated/api.gen.go` from the externally published schema pinned by `schema.lock.json` on every invocation. CI starts from a clean checkout and enforces this rule. Bare `go build` does not run generators; use the build target.
-
-For a consuming gateway, require `github.com/arctex-one/client-go v0.3.0` and replace it with an ignored generated build directory. Before **every** build/test/lint invocation, run:
+Consumer applications must also generate before builds, tests, lint and container compilation:
 
 ```sh
 go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 .generated/arctex-client-go
 ```
 
-For a root Go module, add `replace github.com/arctex-one/client-go => ./.generated/arctex-client-go`; nested modules use the corresponding relative path. The preparation command loads the pinned public source through Go module verification, copies it into the owned build directory and regenerates the wire API before publishing that directory. It never changes the Go module cache. Source is unified and versioned publicly; generated output stays local and ignored. Wire this command into the application build entry points rather than relying on manual setup.
-
-This first release binds the **draft public API contract 0.5.0**, served under `/v1`. The SDK release version, contract document version and HTTP API version are independent. This release does not establish production availability, retention guarantees or a financial migration approval. Use the API origin and tenant account references approved for your installation.
+The command prepares the pinned public module in an ignored, owned build directory. The application's `go.mod` replaces the dependency with that generated directory. Follow the [complete setup recipe](docs/getting-started.md); bare `go build` and `go get` do not run generators.
 
 ## Packages
 
-| Package | Purpose |
+| Import | Purpose |
 | --- | --- |
-| `generated` | Typed HTTP operations and wire models, generated from the external published OpenAPI contract |
-| `publicapi` (module root) | Exact-body callback authentication and committed financial-effect interpretation guards |
-| `transport` | Shared HTTP boundary for consumers that retain exact raw request/response evidence |
+| `github.com/arctex-one/client-go/generated` | Typed HTTP methods and wire models, generated during the build |
+| `github.com/arctex-one/client-go` (package `publicapi`) | Callback authentication and financial-effect interpretation guards |
+| `github.com/arctex-one/client-go/transport` | Bounded HTTP transport for gateways retaining exact request and response bytes |
 
-The [published OpenAPI contract](https://docs.arctex.one/openapi.json) describes request fields, states, errors, ownership and pagination. [Integration guidance](docs/integration.md) covers durable submissions, callbacks, recovery and financial boundaries. [Provenance](PROVENANCE.md) records the extraction source.
+Use the API origin, tenant credentials, account references and supported assets issued for your installation. The client makes no application-level retries and stores no credentials or payment journal. Persist the original request and idempotency key before a POST; an uncertain response must retain that identity. Execution state alone cannot authorize customer accounting.
 
-## Read an account
-
-```go
-import (
-    "context"
-    "net/http"
-    "time"
-
-    wire "github.com/arctex-one/client-go/generated"
-)
-
-func readAccounts(ctx context.Context, origin, currentBearer string) (*wire.AccountList, error) {
-    client := wire.Client{
-        BaseURL: origin,
-        Bearer: currentBearer,
-        HTTP: &http.Client{Timeout: 15 * time.Second},
-    }
-    return client.ListAccounts(ctx, nil)
-}
-```
-
-Resolve the current bearer through your application's approved secret provider before each operation. `Bearer` is an in-memory credential, not a Vault path. Do not persist or log it. Use HTTPS and the installation's trusted TLS transport in production; HTTP is supported for private development stands. Redirects are refused, including when the supplied HTTP client permits them. The supplied client is copied. An omitted client or zero timeout uses a 30-second deadline; contexts can impose shorter deadlines. Do not mutate a typed client's fields while it is in use.
-
-## Create and submit a quote
-
-```go
-request := wire.QuoteRequest{
-    SourceAccountRef: accountRef,
-    SourceAsset: wire.Asset{Network: network, Currency: "TRX", Kind: "NATIVE"},
-    Destination: wire.Destination{
-        Asset: wire.Asset{Network: network, Currency: "TRX", Kind: "NATIVE"},
-        Address: recipient,
-    },
-    Amount: "5.000000",
-    SettlementMode: "FIX_SOURCE",
-    FeeTreatment: "ADD_TO_SOURCE",
-}
-// Persist quoteKey, request and business correlation BEFORE this call.
-quote, err := client.CreateQuote(ctx, nil, quoteKey, request)
-if err != nil { return err }
-// Validate executable state, original asset/instructions and complete economics
-// using your gateway's admission policy before offering or accepting this quote.
-// Persist transferKey and this exact accepted input BEFORE submission.
-transfer, err := client.SubmitTransfer(ctx, nil, transferKey, wire.SubmitTransfer{
-    QuoteRef: quote.QuoteRef,
-})
-```
-
-The snippet belongs inside an application function; `client`, `ctx`, account/network/recipient and durable keys come from that application. Network/asset/route support is installation-specific. The SDK does not generate payment identities, check customer ownership, reserve money or persist a submission. `client_reference` is optional business correlation, not an idempotency key. One accepted quote must not be used to create a second payment.
-
-## Public operations
-
-All methods accept `context.Context` and `url.Values` query parameters. POST methods also require the original idempotency key and a typed body. Reference arguments are path-escaped.
-
-| Surface | Methods |
-| --- | --- |
-| Accounts | `ListAccounts`, `GetBalance`, `ListStatementEntries`, `GetStatementEntry` |
-| Catalog | `ListAssets`, `ListBridgeRoutes` |
-| Receiving addresses | `CreateReceivingAddress`, `ListReceivingAddresses`, `GetReceivingAddress` |
-| Quotes and transfers | `CreateQuote`, `SubmitTransfer`, `ListTransfers`, `GetTransfer` |
-| Recovery | `ListDepositRevisions`, `GetDeposit`, `ListFinancialEffects`, `GetFinancialEffect` |
-
-## Errors and retry safety
-
-```go
-var response *wire.ResponseError
-if errors.As(err, &response) {
-    // Status and Code are available without rendering the remote body.
-    // Body is private bounded evidence. Persist it only in approved storage.
-    if response.Truncated { /* quarantine incomplete evidence */ }
-}
-if errors.Is(err, wire.ErrResponseTooLarge) { /* reconcile original operation */ }
-```
-
-HTTP responses are limited to 4 MiB. Oversized responses, including successful statuses, return an explicit truncated error and are never decoded as success. Non-2xx responses retain their status and body; unknown error codes remain unknown. Public transport error messages omit credentials, URLs and response bodies. Causes remain available through `errors.Is`/`errors.As`; avoid logging underlying private request details.
-
-There are no application-level retries. Go's HTTP transport may retry an eligible request on a reused connection; it preserves that request's identity. After a timeout, lost reply, cancellation, 503 or unknown outcome, retain the original operation, request and key. Explicitly recover or replay that same submission under your existing policy. Do not replace the key, regenerate a quote or infer failure from an execution status. A 410 recovery checkpoint requires reconciliation, not silently restarting a stream.
-
-## Development
-
-```sh
-make build check
-test -z "$(git ls-files generated)"
-```
-
-Generation is deterministic and requires no external generator. The output is ignored and recreated for every supported build. Update `schema.lock.json` only to a reviewed published schema revision; regenerate and run the consumer contract tests together. CI verifies regeneration, race tests and vet on GitHub-hosted runners for this public repository. See [CONTRIBUTING.md](CONTRIBUTING.md).
+SDK versions, schema document versions and HTTP API versions are separate. The current binding targets the draft contract; a client release does not establish production API availability or a retention SLA. HTTP is the supported integration protocol. See the [integration guide](docs/integration.md) for ownership and compatibility rules.

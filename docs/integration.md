@@ -1,4 +1,6 @@
-# Integrating Arctex One
+# Integrating Arctex.One
+
+[Documentation index](../README.md#start-here) · [Setup](getting-started.md) · [API reference](api.md) · [Examples](examples.md)
 
 ## Ownership boundary
 
