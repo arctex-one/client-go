@@ -3,10 +3,22 @@
 A shared Go client for [Arctex One](https://github.com/arctex-one) digital asset processing. Sendico and MCRM use this module; application-specific gateways retain customer authorization, durable evidence, pricing and ledger posting.
 
 ```sh
-go get github.com/arctex-one/client-go@v0.1.1
+git clone https://github.com/arctex-one/client-go.git
+cd client-go
+make build
 ```
 
 Requires Go 1.27.1 or later. The module uses only the Go standard library.
+
+**Generated Go code is never tracked.** `make build`, `make test` and `make check` regenerate `generated/api.gen.go` from `contract/openapi.json` on every invocation. CI starts from a clean checkout and enforces this rule. Bare `go build` does not run generators; use the build target.
+
+For a consuming gateway, require `github.com/arctex-one/client-go v0.2.0` and replace it with an ignored generated build directory. Before **every** build/test/lint invocation, run:
+
+```sh
+go run github.com/arctex-one/client-go/tools/prepare@v0.2.0 .generated/arctex-client-go
+```
+
+For a root Go module, add `replace github.com/arctex-one/client-go => ./.generated/arctex-client-go`; nested modules use the corresponding relative path. The preparation command loads the pinned public source through Go module verification, copies it into the owned build directory and regenerates the wire API before publishing that directory. It never changes the Go module cache. Source is unified and versioned publicly; generated output stays local and ignored. Wire this command into the application build entry points rather than relying on manual setup.
 
 This first release binds the **draft public API contract 0.5.0**, served under `/v1`. The SDK release version, contract document version and HTTP API version are independent. This release does not establish production availability, retention guarantees or a financial migration approval. Use the API origin and tenant account references approved for your installation.
 
@@ -101,10 +113,8 @@ There are no application-level retries. Go's HTTP transport may retry an eligibl
 ## Development
 
 ```sh
-go generate ./...
-go test -race ./...
-go vet ./...
-git diff --exit-code -- generated/api.gen.go
+make build check
+test -z "$(git ls-files generated)"
 ```
 
-Generation is deterministic and requires no external generator. Update `contract/openapi.json` only from a reviewed producer contract revision; regenerate and run the consumer contract tests together. CI verifies regeneration, race tests and vet on GitHub-hosted runners for this public repository. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Generation is deterministic and requires no external generator. The output is ignored and recreated for every supported build. Update `contract/openapi.json` only from a reviewed producer contract revision; regenerate and run the consumer contract tests together. CI verifies regeneration, race tests and vet on GitHub-hosted runners for this public repository. See [CONTRIBUTING.md](CONTRIBUTING.md).

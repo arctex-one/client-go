@@ -14,7 +14,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - run: go generate ./...
-      - run: git diff --exit-code -- generated/api.gen.go
-      - run: go test -race ./...
-      - run: go vet ./...
+      - run: make build check
+      - name: Generated code stays out of Git
+        run: test -z "$(git ls-files generated)"

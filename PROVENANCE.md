@@ -21,6 +21,7 @@ the typed client and raw gateway boundary. Standalone validation, safe error
 messages and regression tests accompany that extraction.
 
 Future producer contract updates must be reviewed and regenerated here. Consumers
-pin a public SDK release rather than copying generator/client source from a
-private processing repository. This provenance identifies source code only; it
+pin a public source-only SDK release. Every build prepares that verified source
+in an ignored directory and regenerates the wire API; generated Go is not tracked.
+No private processing checkout is required. This provenance identifies source code only; it
 does not attest production deployment or financial/custody migration readiness.
