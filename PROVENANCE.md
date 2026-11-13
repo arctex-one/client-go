@@ -25,3 +25,8 @@ pin a public source-only SDK release. Every build prepares that verified source
 in an ignored directory and regenerates the wire API; generated Go is not tracked.
 No private processing checkout is required. This provenance identifies source code only; it
 does not attest production deployment or financial/custody migration readiness.
+
+Contract 0.6.0 adds tenant-scoped webhook verification key lookup and the
+detached Ed25519 callback verifier from Processing issue #32. The SDK uses the
+versioned public schema URL and leaves the legacy 0.5.0 download available to
+prior releases. Existing HMAC verification remains available for migrations.

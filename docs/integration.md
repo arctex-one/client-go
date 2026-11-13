@@ -43,14 +43,25 @@ Balance version, financial-effect cursor and chain event time are different orde
 
 ## Callbacks
 
-Read the exact raw HTTP body with your receiver's size limit. Resolve the current or approved rotation key. Authenticate **before decoding**:
+For an Ed25519 subscription, read the exact raw HTTP body with your receiver's
+size limit. Use a generated client configured with the trusted Arctex origin
+and tenant bearer credential.
 
 ```go
-err := publicapi.VerifyCallback(rawBody, request.Header, signingKey, now, replayWindow)
-if err != nil { /* reject; do not acknowledge or post */ }
+err := publicapi.VerifyCallbackWithPublicKey(request.Context(), rawBody, request.Header, client, now)
 ```
 
-The signature is HMAC-SHA256 over the exact `X-Callback-Timestamp`, a period, and the original body. The algorithm header must be `hmac-sha256`. Missing/ambiguous headers, wrong signatures, changed bytes and timestamps outside the supplied window fail closed. Your application supplies the clock/window policy; the client invents no SLA.
+The verifier requires the Arctex detached JWS profile, fetches the public JWK by
+its protected `kid`, and checks its RFC 7638 thumbprint, retirement expiry, the
+five-minute signing window and the original bytes. A lookup failure or an
+invalid signature prevents acknowledgement. See the
+[Arctex webhook guide](https://docs.arctex.one/guide.md#webhooks) for wire details.
+
+For a migration, deploy public-key support before changing the subscription.
+Persisted legacy deliveries continue to use their original HMAC key and
+`VerifyCallback(rawBody, headers, key, now, window)`. Keep only the verification
+modes allowed by the installation's migration policy, and never retry a failed
+signature with another algorithm.
 
 After authentication, decode `generated.FinancialEvent`, `DepositEvent` or `TransferEvent`. Persist the authenticated raw envelope and stable event/effect identities in a durable inbox before acknowledgement. Retries can use a new signing time and delivery ID, so timestamp windows do not replace durable event/effect deduplication. Keep key outages fail-closed. Do not log keys, raw callback bodies or sensitive payment details.
 

@@ -157,7 +157,7 @@ Keep polling from the saved cursor after `has_more=false` or an empty page. That
 
 ## Authenticate and retain a financial callback
 
-The application supplies its body-size limit, clock, replay window and current/approved rotation key. `retainInbox` must validate stable event identities and tenant scope, store the original authenticated bytes and deduplicate durably. An HTTP success follows successful retention. This receiver performs no customer posting.
+Use the installation's authenticated Arctex client for public-key lookup. The application supplies its body-size limit and clock. `retainInbox` must validate stable event identities and tenant scope, store the original authenticated bytes and deduplicate durably. An HTTP success follows successful retention. This receiver performs no customer posting.
 
 ```go
 package example
@@ -165,6 +165,7 @@ package example
 import (
     "context"
     "encoding/json"
+    "errors"
     "io"
     "net/http"
     "time"
@@ -173,8 +174,8 @@ import (
     wire "github.com/arctex-one/client-go/generated"
 )
 
-func FinancialCallback(w http.ResponseWriter, r *http.Request, key []byte,
-    now time.Time, window time.Duration, bodyLimit int64,
+func FinancialCallback(w http.ResponseWriter, r *http.Request, client publicapi.CallbackKeyClient,
+    now time.Time, bodyLimit int64,
     retainInbox func(context.Context, json.RawMessage, wire.FinancialEvent) error,
 ) {
     if bodyLimit <= 0 {
@@ -186,8 +187,12 @@ func FinancialCallback(w http.ResponseWriter, r *http.Request, key []byte,
         http.Error(w, "invalid body", http.StatusBadRequest)
         return
     }
-    if err := publicapi.VerifyCallback(raw, r.Header, key, now, window); err != nil {
-        http.Error(w, "invalid authentication", http.StatusUnauthorized)
+    if err := publicapi.VerifyCallbackWithPublicKey(r.Context(), raw, r.Header, client, now); err != nil {
+        status := http.StatusServiceUnavailable
+        if errors.Is(err, publicapi.ErrInvalidCallback) {
+            status = http.StatusUnauthorized
+        }
+        http.Error(w, "callback verification failed", status)
         return
     }
     var event wire.FinancialEvent
