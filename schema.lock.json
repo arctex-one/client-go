@@ -1,5 +1,5 @@
 {
-  "url": "https://docs.arctex.one/openapi.json",
-  "sha256": "a757c4d9566c12792d1b6144428101734797ee8baf4cfdbeae63818bea81e049",
-  "version": "0.5.0"
+  "url": "https://docs.arctex.one/contracts/0.6.0/openapi.json",
+  "sha256": "bc4b53f130c812e7d650ce11e01ecfb39a38aed7617bee993d3a1983265019e8",
+  "version": "0.6.0"
 }
