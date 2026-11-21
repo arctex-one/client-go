@@ -34,3 +34,6 @@ prior releases. Existing HMAC verification remains available for migrations.
 Webhook signing-input and verification primitives are maintained in the public
 Arctex protocol module. This SDK owns typed key lookup and keeps its existing
 callback interfaces and contract revision.
+
+SDK v0.5.0 shares its Go wire generator with the Arctex protocol module.
+The OpenAPI 0.6.0 lock, HTTP transport and generated Go output are preserved.

@@ -9,7 +9,7 @@ Use Go 1.27.1 or later and an application-owned API origin, bearer resolver and 
 For an application whose `go.mod` is at the repository root, add:
 
 ```go.mod
-require github.com/arctex-one/client-go v0.3.0
+require github.com/arctex-one/client-go v0.5.0
 
 replace github.com/arctex-one/client-go => ./.generated/arctex-client-go
 ```
@@ -17,7 +17,7 @@ replace github.com/arctex-one/client-go => ./.generated/arctex-client-go
 Add `/.generated/` to the application's `.gitignore`, then prepare the dependency before resolving packages:
 
 ```sh
-go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 .generated/arctex-client-go
+go run github.com/arctex-one/client-go/tools/prepare@v0.5.0 .generated/arctex-client-go
 go mod tidy
 ```
 
@@ -33,7 +33,7 @@ A root application can use this Makefile:
 .PHONY: prepare build test vet
 
 prepare:
-	go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 .generated/arctex-client-go
+	go run github.com/arctex-one/client-go/tools/prepare@v0.5.0 .generated/arctex-client-go
 
 build: prepare
 	go build ./...
