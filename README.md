@@ -23,7 +23,7 @@ cd client-go
 make build
 ```
 
-`make build`, `make test` and `make check` regenerate wire code before compilation. The generator fetches the [published OpenAPI schema](https://docs.arctex.one/openapi.json), then verifies the version and SHA-256 recorded in [schema.lock.json](schema.lock.json). Generated Go and schema snapshots are not tracked in the current source tree. The library uses only the Go standard library.
+`make build`, `make test` and `make check` regenerate wire code before compilation. The generator fetches the [published OpenAPI schema](https://docs.arctex.one/openapi.json), then verifies the version and SHA-256 recorded in [schema.lock.json](schema.lock.json). Generated Go and schema snapshots are not tracked in the current source tree. Webhook wire rules come from the [shared Arctex protocol module](https://github.com/arctex-one/api-protocol-go), which uses the Go standard library.
 
 Consumer applications must also generate before builds, tests, lint and container compilation:
 
@@ -41,6 +41,6 @@ The command prepares the pinned public module in an ignored, owned build directo
 | `github.com/arctex-one/client-go` (package `publicapi`) | Callback authentication and financial-effect interpretation guards |
 | `github.com/arctex-one/client-go/transport` | Bounded HTTP transport for gateways retaining exact request and response bytes |
 
-Use the API origin, tenant credentials, account references and supported assets issued for your installation. The client makes no application-level retries and stores no credentials or payment journal. Persist the original request and idempotency key before a POST; an uncertain response must retain that identity. Execution state alone cannot authorize customer accounting.
+Use the API origin, tenant credentials, account references and supported assets issued for your installation. For local payment integration tests, use the [Arctex API emulator](https://github.com/arctex-one/emulator). The client makes no application-level retries and stores no credentials or payment journal. Persist the original request and idempotency key before a POST; an uncertain response must retain that identity. Execution state alone cannot authorize customer accounting.
 
 SDK versions, schema document versions and HTTP API versions are separate. The current binding targets the draft contract; a client release does not establish production API availability or a retention SLA. HTTP is the supported integration protocol. See the [integration guide](docs/integration.md) for ownership and compatibility rules.
