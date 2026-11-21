@@ -30,3 +30,7 @@ Contract 0.6.0 adds tenant-scoped webhook verification key lookup and the
 detached Ed25519 callback verifier from Processing issue #32. The SDK uses the
 versioned public schema URL and leaves the legacy 0.5.0 download available to
 prior releases. Existing HMAC verification remains available for migrations.
+
+Webhook signing-input and verification primitives are maintained in the public
+Arctex protocol module. This SDK owns typed key lookup and keeps its existing
+callback interfaces and contract revision.

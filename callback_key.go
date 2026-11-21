@@ -1,24 +1,21 @@
 package publicapi
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
+	"github.com/arctex-one/api-protocol-go/webhook"
 	wire "github.com/arctex-one/client-go/generated"
 )
 
 // CallbackVerificationWindow is the maximum age of a public-key delivery.
-const CallbackVerificationWindow = 5 * time.Minute
+const CallbackVerificationWindow = webhook.Ed25519VerificationWindow
 
 // CallbackKeyClient is satisfied by the generated client. Implementations must
 // resolve keys from the receiver's trusted Arctex installation.
@@ -30,33 +27,14 @@ type CallbackKeyClient interface {
 // bounded request body. Persist event and effect identities separately to
 // deduplicate authenticated retries.
 func VerifyCallbackWithPublicKey(ctx context.Context, body []byte, headers http.Header, client CallbackKeyClient, now time.Time) error {
-	if client == nil || now.IsZero() || callbackHeader(headers, "X-Callback-Algorithm") != "jws+eddsa-ed25519" {
+	if client == nil {
 		return ErrInvalidCallback
 	}
-	compact := callbackHeader(headers, "X-Callback-JWS")
-	protected, detached, ok := strings.Cut(compact, ".")
-	payload, encodedSignature, separated := strings.Cut(detached, ".")
-	if !ok || !separated || payload != "" || len(protected) > 1024 || len(encodedSignature) != base64.RawURLEncoding.EncodedLen(ed25519.SignatureSize) {
-		return ErrInvalidCallback
-	}
-	encoding := base64.RawURLEncoding.Strict()
-	raw, err := encoding.DecodeString(protected)
+	delivery, err := webhook.ParseEd25519(headers, now)
 	if err != nil {
-		return ErrInvalidCallback
+		return err
 	}
-	alg, kid, timestamp, err := callbackProtectedFields(raw)
-	if err != nil || alg != "EdDSA" || !ValidCallbackKeyID(kid) ||
-		kid != callbackHeader(headers, "X-Callback-Key-Id") || timestamp != callbackHeader(headers, "X-Callback-Timestamp") {
-		return ErrInvalidCallback
-	}
-	signedAt, err := time.Parse(time.RFC3339Nano, timestamp)
-	if err != nil || signedAt.Before(now.Add(-CallbackVerificationWindow)) || signedAt.After(now) {
-		return ErrInvalidCallback
-	}
-	signature, err := encoding.DecodeString(encodedSignature)
-	if err != nil {
-		return ErrInvalidCallback
-	}
+	kid := delivery.KeyID()
 	jwk, err := client.GetWebhookVerificationKey(ctx, kid, nil)
 	if err != nil {
 		var response *wire.ResponseError
@@ -68,20 +46,12 @@ func VerifyCallbackWithPublicKey(ctx context.Context, body []byte, headers http.
 	if jwk == nil || jwk.Kid != kid || !CallbackKeyUsable(jwk, now) {
 		return ErrInvalidCallback
 	}
-	key := callbackPublicKey(jwk)
-	if key == nil || !ed25519.Verify(key, append([]byte(protected+"."), body...), signature) {
-		return ErrInvalidCallback
-	}
-	return nil
+	return delivery.Verify(body, callbackPublicKey(jwk))
 }
 
 // ValidCallbackKeyID restricts the untrusted key selector before lookup.
 func ValidCallbackKeyID(kid string) bool {
-	if len(kid) != base64.RawURLEncoding.EncodedLen(sha256.Size) {
-		return false
-	}
-	_, err := base64.RawURLEncoding.Strict().DecodeString(kid)
-	return err == nil
+	return webhook.ValidCallbackKeyID(kid)
 }
 
 // CallbackKeyUsable validates the public key profile and its rotation cutoff.
@@ -99,12 +69,7 @@ func CallbackKeyUsable(key *wire.WebhookVerificationKey, now time.Time) bool {
 
 // CallbackKeyID returns the RFC 7638 thumbprint of an Ed25519 public JWK.
 func CallbackKeyID(key ed25519.PublicKey) string {
-	if len(key) != ed25519.PublicKeySize {
-		return ""
-	}
-	x := base64.RawURLEncoding.EncodeToString(key)
-	digest := sha256.Sum256([]byte(`{"crv":"Ed25519","kty":"OKP","x":"` + x + `"}`))
-	return base64.RawURLEncoding.EncodeToString(digest[:])
+	return webhook.CallbackKeyID(key)
 }
 
 func callbackPublicKey(key *wire.WebhookVerificationKey) ed25519.PublicKey {
@@ -117,40 +82,4 @@ func callbackPublicKey(key *wire.WebhookVerificationKey) ed25519.PublicKey {
 		return nil
 	}
 	return ed25519.PublicKey(value)
-}
-
-// Reject duplicate and unknown protected fields before resolving a key. This
-// profile accepts only the protected parameters emitted by the Arctex signer.
-func callbackProtectedFields(raw []byte) (alg, kid, timestamp string, err error) {
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
-		return "", "", "", ErrInvalidCallback
-	}
-	fields := make(map[string]json.RawMessage, 5)
-	for decoder.More() {
-		token, err := decoder.Token()
-		if err != nil {
-			return "", "", "", ErrInvalidCallback
-		}
-		name, ok := token.(string)
-		if !ok || fields[name] != nil {
-			return "", "", "", ErrInvalidCallback
-		}
-		var value json.RawMessage
-		if err := decoder.Decode(&value); err != nil {
-			return "", "", "", ErrInvalidCallback
-		}
-		fields[name] = value
-	}
-	if token, err := decoder.Token(); err != nil || token != json.Delim('}') || len(bytes.TrimSpace(raw[decoder.InputOffset():])) != 0 {
-		return "", "", "", ErrInvalidCallback
-	}
-	var crit []string
-	if len(fields) != 5 || string(fields["b64"]) != "false" ||
-		json.Unmarshal(fields["crit"], &crit) != nil || len(crit) != 1 || crit[0] != "b64" ||
-		json.Unmarshal(fields["alg"], &alg) != nil || json.Unmarshal(fields["kid"], &kid) != nil ||
-		json.Unmarshal(fields["ts"], &timestamp) != nil {
-		return "", "", "", ErrInvalidCallback
-	}
-	return alg, kid, timestamp, nil
 }
