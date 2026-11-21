@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md#start-here) · [Examples](examples.md) · [Published schema](https://docs.arctex.one/openapi.json)
 
-This reference describes client release `v0.3.0`. Resource fields, supported filters, status values and installation-specific route constraints are defined by the external schema pinned in that release. No schema snapshot is maintained here.
+This reference describes client release `v0.5.0`. Resource fields, supported filters, status values and installation-specific route constraints are defined by the external schema pinned in that release. No schema snapshot is maintained here.
 
 ## Typed HTTP client
 

@@ -2,7 +2,7 @@
 
 The shared Go client for Arctex.One processing: accounts, receiving addresses, quotations, transfers and committed financial effects over the public HTTP API. Sendico and MCRM integration gateways use this module while retaining their customer authorization, durable recovery and accounting rules.
 
-**Module:** `github.com/arctex-one/client-go` · **Client release:** `v0.3.0` · **API:** `/v1`, draft contract `0.5.0` · **Go:** `1.27.1+`
+**Module:** `github.com/arctex-one/client-go` · **Client release:** `v0.5.0` · **API:** `/v1`, draft contract `0.6.0` · **Go:** `1.27.1+`
 
 ## Start here
 
@@ -23,12 +23,12 @@ cd client-go
 make build
 ```
 
-`make build`, `make test` and `make check` regenerate wire code before compilation. The generator fetches the [published OpenAPI schema](https://docs.arctex.one/openapi.json), then verifies the version and SHA-256 recorded in [schema.lock.json](schema.lock.json). Generated Go and schema snapshots are not tracked in the current source tree. Webhook wire rules come from the [shared Arctex protocol module](https://github.com/arctex-one/api-protocol-go), which uses the Go standard library.
+`make build`, `make test` and `make check` regenerate wire code before compilation. The generator fetches the [published OpenAPI schema](https://docs.arctex.one/contracts/0.6.0/openapi.json), then verifies the version and SHA-256 recorded in [schema.lock.json](schema.lock.json). Generated Go and schema snapshots are not tracked in the current source tree. Webhook wire rules and build-time Go generation come from the [shared Arctex protocol module](https://github.com/arctex-one/api-protocol-go), which uses the Go standard library.
 
 Consumer applications must also generate before builds, tests, lint and container compilation:
 
 ```sh
-go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 .generated/arctex-client-go
+go run github.com/arctex-one/client-go/tools/prepare@v0.5.0 .generated/arctex-client-go
 ```
 
 The command prepares the pinned public module in an ignored, owned build directory. The application's `go.mod` replaces the dependency with that generated directory. Follow the [complete setup recipe](docs/getting-started.md); bare `go build` and `go get` do not run generators.

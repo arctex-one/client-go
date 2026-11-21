@@ -73,7 +73,7 @@ This guard does not prove account ownership, complete source history, posting ba
 
 ## Source-only builds and migration
 
-Require `github.com/arctex-one/client-go v0.3.0`. Replace the module with a repository-ignored `.generated/arctex-client-go` build directory (adjust the relative path for nested modules). Run `go run github.com/arctex-one/client-go/tools/prepare@v0.3.0 <build-directory>` before every application build, test, analysis and container compile. The explicit pinned version is required; do not use `@latest`. Put generation in the actual build entry points, including CI and Docker, not in a manual prerequisite. `go build` itself does not execute Go generators.
+Require `github.com/arctex-one/client-go v0.5.0`. Replace the module with a repository-ignored `.generated/arctex-client-go` build directory (adjust the relative path for nested modules). Run `go run github.com/arctex-one/client-go/tools/prepare@v0.5.0 <build-directory>` before every application build, test, analysis and container compile. The explicit pinned version is required; do not use `@latest`. Put generation in the actual build entry points, including CI and Docker, not in a manual prerequisite. `go build` itself does not execute Go generators.
 
 The prepare command obtains its source from the verified public Go module, copies it to a temporary directory and runs the same source generator. It publishes only after generation succeeds, refuses an unowned output directory, preserves the old directory on failure and never mutates the shared Go module cache. Generated Go is ignored, never committed. The marker file identifies owned generated output; do not create one in a user directory. Parallel preparation of the same directory fails explicitly under its generation lock.
 
